@@ -29,13 +29,13 @@ def main():
     # Generate a random secret key and store it securely
     sender_secret_key = generate_random_key()
 
-    #Enter senders name
+    # Enter sender's name
     sender_name = input("Enter sender's name: ")
 
     # Receive recipient's name and message from the user
     recipient_name = input("Enter recipient's name: ")
     message_to_send = input("Enter the message you want to send: ").encode()
-    print(f"{sender_name} has sent message to: {recipient_name}")
+    print(f"{sender_name} has sent a message to: {recipient_name}")
 
     # Create an HMAC for the message
     hmac_value = create_hmac(sender_secret_key, message_to_send)
@@ -55,18 +55,28 @@ def main():
     # Receiver's perspective
     # Receive the recipient's name, HMAC, and the encrypted message
 
-    # Verify the HMAC
+    received_message = decrypt_message(shared_key, nonce, ciphertext, tag)
+
+    # User prompt to decide whether to tamper with the received message
+    tamper_choice = input("Do you want to tamper with the received message? (yes/no): ").strip().lower()
+
+    if tamper_choice == "yes":
+        received_message += b"..tampered"
+
+    # Verify the HMAC for the tampered or unaltered message
     receiver_secret_key = sender_secret_key  # Receiver has the same secret key
 
-    received_message = decrypt_message(shared_key, nonce, ciphertext, tag)
-    received_hmac = create_hmac(receiver_secret_key, received_message)
+    # Create an HMAC for the tampered message
+    tampered_hmac = create_hmac(receiver_secret_key, received_message)
 
-    # Compare the received HMAC with the calculated HMAC
-    if hmac.compare_digest(hmac_value, received_hmac):
+    # Compare the received HMAC with the tampered HMAC
+    if not hmac.compare_digest(hmac_value, tampered_hmac):
+        print("Message has been tampered with.")
+        print("Received Message (Tampered):", received_message.decode())
+    else:
         print("Message is authentic. It has not been tampered with.")
         print("Received Message:", received_message.decode())
-    else:
-        print("Message may have been tampered with. Do not trust it.")
 
 if __name__ == "__main__":
     main()
+
